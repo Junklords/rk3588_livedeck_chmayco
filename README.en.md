@@ -155,7 +155,7 @@ ADC keys use SARADC1 and SARADC3. ADC1 carries volume-down, back, menu and volum
 | I2C2 | M4 | `0x0C` | DW9800W | IMX766 autofocus |
 | I2C2 | M4 | `0x10` | IMX766 | Camera |
 | I2C3 | M0 | `0x2B` | LT6911UXC | HDMI to MIPI bridge |
-| I2C5 | M0 | `0x14` | GT9xx | Touchscreen |
+| I2C5 | M0 | `0x14` | GT9110/GT9xx | Touchscreen |
 | I2C6 | M0 | `0x32` | SD3078/HYM8563-compatible RTC | Clock and wakeup |
 | I2C6 | M0 | `0x4E` | HUSB311 | Type-C PD |
 | I2C7 | default | `0x11` | ES8388 | Audio codec |
@@ -212,12 +212,16 @@ The RK3588 media and accelerator blocks are SoC-wide capabilities rather than bo
 
 The 7.3 mainline tree explicitly enables `rknn_core_0/1/2` with their MMUs, dual RGA3, dual-core RGA2, VPU121, four VEPU121 JPEG encoders, RKVDEC0/1, AV1 and all associated MMUs. `pd_npu` is supplied from `vdd_npu_s0`, while `pd_rkvdec0/1` and `pd_venc0/1` are supplied from `vdd_vdenc_s0`.
 
-`dts-7.3-linux` is written against mainline bindings rather than vendor DTSI properties. It also covers the RK806 and RK8602/RK8603 regulators, eight CPU cores, eMMC, UART2/M0, GMAC1, PCIe 2.0 x1 lane0, SATA0, USB3 OTG0/Host1, USB2 hosts, HUSB311 Type-C, VOP2, eDP0, HDMI1, DP0, ES8388, SD3078 RTC and PWM3 fan control.
+`dts-7.3-linux` is written against mainline bindings rather than vendor DTSI properties. It currently covers the RK806 and RK8602/RK8603 regulators, eight CPU cores, eMMC, UART2/M0, GMAC1, PCIe 2.0 x1 lane0, SATA0, USB3 OTG0/Host1, USB2 hosts, HUSB311 Type-C, VOP2, eDP0, HDMI1, DP0, ES8388, SD3078 RTC and PWM3 fan control.
+
+GT9110 touch is included on I2C5. ES8388 MCLK is supplied through the `I2S0_8CH_MCLKOUT_TO_IO` gate while the internal `I2S0_8CH_MCLKOUT` remains configured at 12.288 MHz. HDMI1 audio stays disabled so it does not take over the board's default ES8388 output.
+
+An independently tested v25 mainline DTB (SHA-256 `0285024c095b954188b8057bb724df46bbf6497384137aab44c47e18435eb46c`) confirms working eDP and Ethernet. That build disables RK806 and uses `spidev` for power-off; this tree keeps kernel-managed RK806 with `system-power-controller` and does not copy that workaround.
 
 Mainline 7.3 does not yet expose the RK3588 RKCIF/RKISP capture nodes or standalone RKVENC H.264/H.265 nodes. Those vendor capabilities are therefore not forced into the mainline DTS. Mainline driver behavior, eDP panel timing and Type-C/DP switching still require hardware validation.
 
 `rkisp1_vir0` still shares an endpoint with `rkcif_mipi_lvds_sditf`, so DTC reports a non-bidirectional graph connection. This is not a base-boot blocker, but the second ISP path requires hardware validation.
 
-The factory FDT contains Goodix touch data, but touch is outside the minimum boot path and still needs driver and coordinate validation. Android-specific serial number and slot suffix must be replaced by the boot flow for production devices.
+GT9110 touch is now wired on I2C5 using the hardware-tested mainline configuration; coordinate mapping and interrupt stability still need a clean-boot regression. Android-specific serial number and slot suffix must be replaced by the boot flow for production devices.
 
 The device tree only describes kernel-side wiring. A working loader, U-Boot and eMMC layout are still required for the board to boot.

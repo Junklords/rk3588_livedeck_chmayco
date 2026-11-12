@@ -185,7 +185,7 @@ ADC 按键使用 SARADC：
 | I2C2 | M4 | `0x0C` | DW9800W | IMX766 对焦马达 |
 | I2C2 | M4 | `0x10` | IMX766 | MIPI 摄像头 |
 | I2C3 | M0 | `0x2B` | LT6911UXC | HDMI→MIPI 桥 |
-| I2C5 | M0 | `0x14` | GT9xx | 触摸屏 |
+| I2C5 | M0 | `0x14` | GT9110/GT9xx | 触摸屏 |
 | I2C6 | M0 | `0x32` | SD3078/HYM8563 兼容 RTC | 时钟与唤醒 |
 | I2C6 | M0 | `0x4E` | HUSB311 | Type-C PD 与角色切换 |
 | I2C7 | 默认 | `0x11` | ES8388 | 板载音频 Codec |
@@ -271,13 +271,17 @@ ES8388 控制引脚：
 - USB3 OTG0/Host1、USB2 Host0/1、HUSB311 Type-C；
 - VOP2、eDP0 面板、HDMI1、DP0；
 - 三核 NPU、RGA3/RGA2、VPU121、四核 VEPU121 JPEG、RKVDEC0/1 和 AV1；
-- ES8388 声卡、SD3078 RTC、PWM3 风扇和 ADC/GPIO 按键。
+- ES8388 声卡、GT9110 触摸、SD3078 RTC、PWM3 风扇和 ADC/GPIO 按键。
 
-Linux 7.3 主线尚未提供本机所需的 RKCIF/RKISP 采集节点，因此 IMX766 和 LT6911UXC 的完整采集链路没有强行移植。主线驱动行为、eDP 面板时序和 Type-C/DP 切换仍需实机验证。
+ES8388 的 MCLK 由 `I2S0_8CH_MCLKOUT_TO_IO` 输出，频率仍由内部 `I2S0_8CH_MCLKOUT` 配置为 12.288 MHz。HDMI1 声卡保持关闭，避免抢占板载 ES8388 的默认音频输出。
+
+外部实测的 v25 主线 DTB（SHA-256 `0285024c095b954188b8057bb724df46bbf6497384137aab44c47e18435eb46c`）确认 eDP 和网络可用。该版本通过禁用 RK806、启用 `spidev` 实现关机断电；本工程仍让内核直接管理 RK806 和 `system-power-controller`，不引入这套绕过方案。
+
+Linux 7.3 主线尚未提供本机所需的 vendor RKCIF/RKISP 驱动，因此 IMX766 和 LT6911UXC 的完整采集链路没有强行移植。主线驱动行为、eDP 面板时序和 Type-C/DP 切换仍需实机验证。
 
 ## 已知限制
 
 1. 原厂 `rkisp1_vir0` 与 `rkcif_mipi_lvds_sditf` 共用同一端点，DTC 会报告非双向 graph 连接。基础启动不受影响，第二条 ISP 路径需要实机采集验证。
-2. 工厂 FDT 存在 Goodix 触摸信息，但目前未纳入最小启动路径，仍需驱动和坐标验证。
+2. GT9110 触摸已按实测主线配置接入 I2C5，仍需在干净启动环境中回归坐标和中断稳定性。
 3. Android DTB 保留本机原厂序列号和 `_a` slot；批量部署时必须由引导层替换设备专属参数。
 4. 设备树只描述内核侧硬件。正式启动仍依赖匹配的 loader、U-Boot 和 eMMC 分区布局。
