@@ -140,7 +140,7 @@ RK8602 (I2C1 0x42) ──► NPU        0.55–0.95V
 | 功能 | 引脚 | GPIO 宏 | 有效电平 | 设备树节点或信号 |
 | --- | --- | --- | --- | --- |
 | RK806 中断 | GPIO0_D7 | `RK_PD7` | Low | `rk806single@0` |
-| Type-C PD 中断 | GPIO0_D3 | `RK_PD3` | Low | HUSB311 `usbc0_int` |
+| Type-C PD 中断 | GPIO0_D3 | `RK_PD3` | Low | HUSB311 `husb311_int` |
 | RTC 中断 | GPIO0_B0 | `RK_PB0` | Low | SD3078 `hym8563_int` |
 | SDIO/WiFi reset | GPIO0_C4 | `RK_PC4` | Low | `sdio_pwrseq`，原厂 SDIO 关闭 |
 | IMX766 PWDN | GPIO1_A2 | `RK_PA2` | High | `pwdn-gpios` |
@@ -234,8 +234,8 @@ ES8388 控制引脚：
 | 网络 | RJ45 | `ethernet@fe1c0000` | RGMII，PHY@1，`tx_delay=0x43` | 启用 |
 | 显示 | eDP0 | `edp@fdec0000` | 1920×1080 | 启用 |
 | 显示 | HDMI1 | `hdmi@fdea0000` | HDMI TX | 启用 |
-| 显示 | DP0 | `dp@fde50000` | DP Alt Mode | 启用 |
-| USB | Type-C | USB3 OTG0 + HUSB311 | OTG / PD / DP Alt | 启用 |
+| 显示 | DP0 | `dp@fde50000` | DP Alt Mode | 原厂支持，主线待实测 |
+| USB | Type-C | USB3 OTG0 + HUSB311 | OTG / PD / USB2-3 / DP Alt | 启用 |
 | USB | USB3 Host1 | USB3 OTG1 | Host | 启用 |
 | USB | USB2 Host0/1 | EHCI + OHCI | Host | 启用 |
 | 采集 | LT6911UXC | I2C3 + MIPI DPHY0 | 4-lane | 启用 |
@@ -269,7 +269,7 @@ ES8388 控制引脚：
 - RK806、RK8602/RK8603 与八核 CPU 供电；
 - eMMC、UART2/M0、GMAC1、PCIe 2.0 x1 lane0、SATA0；
 - USB3 OTG0/Host1、USB2 Host0/1、HUSB311 Type-C；
-- VOP2、eDP0 面板、HDMI1、DP0；
+- VOP2、eDP0 面板、HDMI1、DP0 Type-C Alt Mode；
 - 三核 NPU、RGA3/RGA2、VPU121、四核 VEPU121 JPEG、RKVDEC0/1 和 AV1；
 - ES8388 声卡、GT9110 触摸、SD3078 RTC、PWM3 风扇和 ADC/GPIO 按键。
 
@@ -277,11 +277,14 @@ ES8388 的 MCLK 由 `I2S0_8CH_MCLKOUT_TO_IO` 输出，频率仍由内部 `I2S0_8
 
 外部实测的 v25 主线 DTB（SHA-256 `0285024c095b954188b8057bb724df46bbf6497384137aab44c47e18435eb46c`）确认 eDP 和网络可用。该版本通过禁用 RK806、启用 `spidev` 实现关机断电；本工程仍让内核直接管理 RK806 和 `system-power-controller`，不引入这套绕过方案。
 
-Linux 7.3 主线尚未提供本机所需的 vendor RKCIF/RKISP 驱动，因此 IMX766 和 LT6911UXC 的完整采集链路没有强行移植。主线驱动行为、eDP 面板时序和 Type-C/DP 切换仍需实机验证。
+群友实测的 v31 主线 DTB 进一步确认了 eDP、网络、三核 RKNN 节点、HUSB311 PD、SD3078 RTC 和 ES8388 音频配置。本工程已按 v31 将 eDP/背光供电收敛到 `vcc12v_dcin`，并移除未经硬件验证的面板 GPIO/固定时序。原厂 5.10 DTB 同时明确启用了 DP0、USBDP PHY `dp-port` 和 SVID `0xff01` 的 DisplayPort Alt Mode，因此主线 DTS 保留 Type-C DP 显示链路；由于 lanes 由 Alt Mode 动态协商，不静态设置 `rockchip,dp-lane-mux`。
+
+Linux 7.3 主线尚未提供本机所需的 vendor RKCIF/RKISP 驱动，因此 IMX766 和 LT6911UXC 的完整采集链路没有强行移植。
 
 ## 已知限制
 
 1. 原厂 `rkisp1_vir0` 与 `rkcif_mipi_lvds_sditf` 共用同一端点，DTC 会报告非双向 graph 连接。基础启动不受影响，第二条 ISP 路径需要实机采集验证。
 2. GT9110 触摸已按实测主线配置接入 I2C5，仍需在干净启动环境中回归坐标和中断稳定性。
-3. Android DTB 保留本机原厂序列号和 `_a` slot；批量部署时必须由引导层替换设备专属参数。
-4. 设备树只描述内核侧硬件。正式启动仍依赖匹配的 loader、U-Boot 和 eMMC 分区布局。
+3. Type-C DP 能力有原厂 DTB 证据，当前主线 DTS 已按原厂拓扑恢复 DP0/SBU/Alt Mode 端点，但仍需在主线内核下实测 PD 协商、lane 方向和显示输出。
+4. Android DTB 保留本机原厂序列号和 `_a` slot；批量部署时必须由引导层替换设备专属参数。
+5. 设备树只描述内核侧硬件。正式启动仍依赖匹配的 loader、U-Boot 和 eMMC 分区布局。

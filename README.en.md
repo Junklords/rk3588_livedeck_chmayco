@@ -191,8 +191,8 @@ HDMI input
 | Ethernet | `ethernet@fe1c0000` | RGMII, PHY 1, `tx_delay=0x43` | Enabled |
 | eDP0 | `edp@fdec0000` | 1920×1080 | Enabled |
 | HDMI1 | `hdmi@fdea0000` | HDMI TX | Enabled |
-| DP0 | `dp@fde50000` | DP Alt Mode | Enabled |
-| Type-C | USB3 OTG0 + HUSB311 | OTG / PD / DP Alt | Enabled |
+| DP0 | `dp@fde50000` | DP Alt Mode | Factory-supported, mainline test pending |
+| Type-C | USB3 OTG0 + HUSB311 | OTG / PD / USB2-3 / DP Alt | Enabled |
 | USB3 Host1 | USB3 OTG1 | Host | Enabled |
 | USB2 Host0/1 | EHCI + OHCI | Host | Enabled |
 | LT6911UXC | I2C3 + MIPI DPHY0 | 4-lane input | Enabled |
@@ -212,16 +212,20 @@ The RK3588 media and accelerator blocks are SoC-wide capabilities rather than bo
 
 The 7.3 mainline tree explicitly enables `rknn_core_0/1/2` with their MMUs, dual RGA3, dual-core RGA2, VPU121, four VEPU121 JPEG encoders, RKVDEC0/1, AV1 and all associated MMUs. `pd_npu` is supplied from `vdd_npu_s0`, while `pd_rkvdec0/1` and `pd_venc0/1` are supplied from `vdd_vdenc_s0`.
 
-`dts-7.3-linux` is written against mainline bindings rather than vendor DTSI properties. It currently covers the RK806 and RK8602/RK8603 regulators, eight CPU cores, eMMC, UART2/M0, GMAC1, PCIe 2.0 x1 lane0, SATA0, USB3 OTG0/Host1, USB2 hosts, HUSB311 Type-C, VOP2, eDP0, HDMI1, DP0, ES8388, SD3078 RTC and PWM3 fan control.
+`dts-7.3-linux` is written against mainline bindings rather than vendor DTSI properties. It currently covers the RK806 and RK8602/RK8603 regulators, eight CPU cores, eMMC, UART2/M0, GMAC1, PCIe 2.0 x1 lane0, SATA0, USB3 OTG0/Host1, USB2 hosts, HUSB311 Type-C, VOP2, eDP0, HDMI1, ES8388, SD3078 RTC and PWM3 fan control.
 
 GT9110 touch is included on I2C5. ES8388 MCLK is supplied through the `I2S0_8CH_MCLKOUT_TO_IO` gate while the internal `I2S0_8CH_MCLKOUT` remains configured at 12.288 MHz. HDMI1 audio stays disabled so it does not take over the board's default ES8388 output.
 
 An independently tested v25 mainline DTB (SHA-256 `0285024c095b954188b8057bb724df46bbf6497384137aab44c47e18435eb46c`) confirms working eDP and Ethernet. That build disables RK806 and uses `spidev` for power-off; this tree keeps kernel-managed RK806 with `system-power-controller` and does not copy that workaround.
 
-Mainline 7.3 does not yet expose the RK3588 RKCIF/RKISP capture nodes or standalone RKVENC H.264/H.265 nodes. Those vendor capabilities are therefore not forced into the mainline DTS. Mainline driver behavior, eDP panel timing and Type-C/DP switching still require hardware validation.
+An independently tested v31 mainline DTB further confirms eDP, Ethernet, all three RKNN nodes, HUSB311 PD, SD3078 RTC and the ES8388 audio configuration. This tree now uses `vcc12v_dcin` for the eDP panel and backlight and removes unverified panel GPIO/timing overrides. The factory 5.10 DTB explicitly enables DP0, the USBDP PHY `dp-port` and DisplayPort Alt Mode with SVID `0xff01`, so the mainline DTS retains the Type-C DP display graph. The lanes are negotiated dynamically by Alt Mode, so no static `rockchip,dp-lane-mux` is set.
+
+Mainline 7.3 does not yet expose the RK3588 RKCIF/RKISP capture nodes or standalone RKVENC H.264/H.265 nodes. Those vendor capabilities are therefore not forced into the mainline DTS.
 
 `rkisp1_vir0` still shares an endpoint with `rkcif_mipi_lvds_sditf`, so DTC reports a non-bidirectional graph connection. This is not a base-boot blocker, but the second ISP path requires hardware validation.
 
 GT9110 touch is now wired on I2C5 using the hardware-tested mainline configuration; coordinate mapping and interrupt stability still need a clean-boot regression. Android-specific serial number and slot suffix must be replaced by the boot flow for production devices.
+
+Type-C DP support is backed by the factory DTB. The mainline DTS restores the DP0, SBU and Alt Mode endpoints from that topology, but PD negotiation, lane orientation and display output still require mainline hardware validation.
 
 The device tree only describes kernel-side wiring. A working loader, U-Boot and eMMC layout are still required for the board to boot.

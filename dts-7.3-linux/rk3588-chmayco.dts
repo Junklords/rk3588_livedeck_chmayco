@@ -60,12 +60,8 @@
 	backlight: backlight {
 		compatible = "pwm-backlight";
 		pwms = <&pwm1 0 1000000 0>;
-		brightness-levels = <0 1 2 4 8 16 32 64 128 192 255>;
-		default-brightness-level = <8>;
-		enable-gpios = <&gpio2 RK_PC1 GPIO_ACTIVE_HIGH>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&backlight_en>;
-		power-supply = <&vcc3v3_lcd_n>;
+		default-brightness-level = <200>;
+		power-supply = <&vcc12v_dcin>;
 		status = "okay";
 	};
 
@@ -121,6 +117,8 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&typec5v_pwren>;
 		regulator-name = "vbus5v0_typec";
+		regulator-always-on;
+		regulator-boot-on;
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
 		vin-supply = <&vcc5v0_usb>;
@@ -303,29 +301,8 @@
 		panel {
 			compatible = "edp-panel";
 			backlight = <&backlight>;
-			power-supply = <&vcc3v3_lcd_n>;
-			enable-gpios = <&gpio1 RK_PA4 GPIO_ACTIVE_HIGH>;
+			power-supply = <&vcc12v_dcin>;
 			no-hpd;
-			prepare-delay-ms = <120>;
-			enable-delay-ms = <120>;
-			disable-delay-ms = <120>;
-			unprepare-delay-ms = <120>;
-
-			panel-timing {
-				clock-frequency = <152570000>;
-				hactive = <1920>;
-				vactive = <1080>;
-				hfront-porch = <48>;
-				hsync-len = <32>;
-				hback-porch = <192>;
-				vfront-porch = <3>;
-				vsync-len = <6>;
-				vback-porch = <71>;
-				hsync-active = <0>;
-				vsync-active = <0>;
-				de-active = <0>;
-				pixelclk-active = <0>;
-			};
 
 			port {
 				panel_in_edp0: endpoint {
@@ -475,22 +452,17 @@
 	rtc@32 {
 		compatible = "whwave,sd3078";
 		reg = <0x32>;
-		#clock-cells = <0>;
-		clock-output-names = "hym8563";
-		interrupt-parent = <&gpio0>;
-		interrupts = <RK_PB0 IRQ_TYPE_LEVEL_LOW>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&hym8563_int>;
 		wakeup-source;
+		status = "okay";
 	};
 
-	usbc0: usb-typec@4e {
+	usbc0: husb311@4e {
 		compatible = "hynetek,husb311";
 		reg = <0x4e>;
 		interrupt-parent = <&gpio0>;
 		interrupts = <RK_PD3 IRQ_TYPE_LEVEL_LOW>;
 		pinctrl-names = "default";
-		pinctrl-0 = <&usbc0_int>;
+		pinctrl-0 = <&husb311_int>;
 		vbus-supply = <&vbus5v0_typec>;
 		status = "okay";
 
@@ -500,7 +472,6 @@
 			data-role = "dual";
 			power-role = "dual";
 			try-power-role = "sink";
-			pd-revision = /bits/ 8 <0x2 0x0 0x1 0x2>;
 			source-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)>;
 			sink-pdos = <PDO_FIXED(5000, 1000, PDO_FIXED_USB_COMM)>;
 			op-sink-microwatt = <1000000>;
@@ -649,12 +620,6 @@
 };
 
 &pinctrl {
-	backlight {
-		backlight_en: backlight-en {
-			rockchip,pins = <2 RK_PC1 RK_FUNC_GPIO &pcfg_pull_down>;
-		};
-	};
-
 	buttons {
 		gpiobtn: gpiobtn {
 			rockchip,pins = <2 RK_PB0 RK_FUNC_GPIO &pcfg_pull_up>,
@@ -674,12 +639,6 @@
 		};
 	};
 
-	hym8563 {
-		hym8563_int: hym8563-int {
-			rockchip,pins = <0 RK_PB0 RK_FUNC_GPIO &pcfg_pull_up>;
-		};
-	};
-
 	touch {
 		gt9xx_gpios: gt9xx-gpios {
 			rockchip,pins = <3 RK_PC1 RK_FUNC_GPIO &pcfg_pull_down>,
@@ -688,7 +647,7 @@
 	};
 
 	usb {
-		usbc0_int: usbc0-int {
+		husb311_int: husb311-int {
 			rockchip,pins = <0 RK_PD3 RK_FUNC_GPIO &pcfg_pull_up>;
 		};
 
@@ -1083,7 +1042,6 @@
 	orientation-switch;
 	sbu1-dc-gpios = <&gpio4 RK_PA6 GPIO_ACTIVE_HIGH>;
 	sbu2-dc-gpios = <&gpio4 RK_PA7 GPIO_ACTIVE_HIGH>;
-	rockchip,dp-lane-mux = <2 3>;
 	status = "okay";
 
 	port {
