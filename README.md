@@ -290,3 +290,5 @@ Linux 7.3 主线尚未提供本机所需的 vendor RKCIF/RKISP 驱动，因此 I
 4. Android DTB 保留本机原厂序列号和 `_a` slot；批量部署时必须由引导层替换设备专属参数。
 5. 设备树只描述内核侧硬件。正式启动仍依赖匹配的 loader、U-Boot 和 eMMC 分区布局。
 6. M.2 B-key 座尚未焊接。当前只完成软件预埋；焊接后需用 B+M key SATA SSD 验证 SATA1、启动扫描和供电。
+
+补料与验证步骤见 [M.2 B-key SATA 焊盘补料与验证指南](docs/M2-BKEY-SATA-HARDWARE-PREP.md)。

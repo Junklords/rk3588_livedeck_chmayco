@@ -231,3 +231,5 @@ Type-C DP support is backed by the factory DTB. The mainline DTS restores the DP
 The device tree only describes kernel-side wiring. A working loader, U-Boot and eMMC layout are still required for the board to boot.
 
 The M.2 B-key socket is not soldered. Only the software wiring is complete. After soldering, test SATA1, boot scanning and power with a B+M key SATA SSD.
+
+See [M.2 B-key SATA hardware preparation](docs/M2-BKEY-SATA-HARDWARE-PREP.md) for parts and validation.
