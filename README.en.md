@@ -39,7 +39,7 @@ from EVB7 are now described explicitly by the board file.
 | HDMI input | LT6911UXC to MIPI CSI-2 |
 | Camera | IMX766, DW9800W autofocus and OTP EEPROM |
 | Ethernet | GMAC1, RGMII, PHY address 1 |
-| Expansion | PCIe 2.0 x1 lane 0 and SATA0 |
+| Expansion | M.2 B-key footprint prewired to SATA1; separate SATA0 |
 | USB | USB3 OTG0, USB3 Host1, two USB2 hosts, Type-C PD |
 | Audio | ES8388, HDMI1 audio and DP0 audio |
 | RTC | SD3078/HYM8563-compatible device at I2C `0x32` |
@@ -74,7 +74,7 @@ from EVB7 are now described explicitly by the board file.
                  └──────┘ └─────┘ └─────────┘ └─────────┘
 
 GMAC1/RGMII ──► Ethernet PHY @ MDIO 1 ──► RJ45
-PCIe 2.0 x1 ──► combphy1
+M.2 B-key   ──► combphy1
 SATA0       ──► combphy0
 
 I2S0 ──► ES8388 ──► Headphone / Speaker amplifiers
@@ -187,7 +187,7 @@ HDMI input
 | --- | --- | --- | --- |
 | eMMC | `mmc@fe2e0000` | 8-bit HS400 | Enabled |
 | SATA0 | `sata@fe210000` | SATA + combphy0 | Enabled |
-| PCIe 2.0 x1 lane0 | `pcie@fe170000` | Domain 2 + combphy1 | Enabled |
+| M.2 B-key SATA1 | `sata@fe220000` | SATA + combphy1 | Prewired; solder a B-key socket first |
 | Ethernet | `ethernet@fe1c0000` | RGMII, PHY 1, `tx_delay=0x43` | Enabled |
 | eDP0 | `edp@fdec0000` | 1920×1080 | Enabled |
 | HDMI1 | `hdmi@fdea0000` | HDMI TX | Enabled |
@@ -202,7 +202,7 @@ HDMI input
 
 ## Status policy and limitations
 
-The factory board enables eDP0, HDMI1, DP0, GMAC1, PCIe lane0, SATA0, eMMC, USB OTG/hosts, IMX766, LT6911 and ES8388. HDMI0, DP1, DSI0/1, eDP1, SD, SDIO, PCIe 3.0 and USB Host3 remain disabled.
+The factory board enables eDP0, HDMI1, DP0, GMAC1, PCIe lane0, SATA0, eMMC, USB OTG/hosts, IMX766, LT6911 and ES8388. The rebuilt trees disable PCIe lane0 and enable SATA1 on the shared `combphy1_ps` for the optional M.2 B-key footprint. HDMI0, DP1, DSI0/1, eDP1, SD, SDIO, PCIe 3.0 and USB Host3 remain disabled.
 
 The factory DTB disables PWM3 even though the fan references it; all rebuilt trees enable PWM3. The LED is disabled to protect the shared GMAC1 reset line.
 
@@ -212,7 +212,7 @@ The RK3588 media and accelerator blocks are SoC-wide capabilities rather than bo
 
 The 7.3 mainline tree explicitly enables `rknn_core_0/1/2` with their MMUs, dual RGA3, dual-core RGA2, VPU121, four VEPU121 JPEG encoders, RKVDEC0/1, AV1 and all associated MMUs. `pd_npu` is supplied from `vdd_npu_s0`, while `pd_rkvdec0/1` and `pd_venc0/1` are supplied from `vdd_vdenc_s0`.
 
-`dts-7.3-linux` is written against mainline bindings rather than vendor DTSI properties. It currently covers the RK806 and RK8602/RK8603 regulators, eight CPU cores, eMMC, UART2/M0, GMAC1, PCIe 2.0 x1 lane0, SATA0, USB3 OTG0/Host1, USB2 hosts, HUSB311 Type-C, VOP2, eDP0, HDMI1, ES8388, SD3078 RTC and PWM3 fan control.
+`dts-7.3-linux` is written against mainline bindings rather than vendor DTSI properties. It currently covers the RK806 and RK8602/RK8603 regulators, eight CPU cores, eMMC, UART2/M0, GMAC1, M.2 SATA1, SATA0, USB3 OTG0/Host1, USB2 hosts, HUSB311 Type-C, VOP2, eDP0, HDMI1, ES8388, SD3078 RTC and PWM3 fan control.
 
 GT9110 touch is included on I2C5. ES8388 MCLK is supplied through the `I2S0_8CH_MCLKOUT_TO_IO` gate while the internal `I2S0_8CH_MCLKOUT` remains configured at 12.288 MHz. HDMI1 audio stays disabled so it does not take over the board's default ES8388 output.
 
@@ -229,3 +229,5 @@ GT9110 touch is now wired on I2C5 using the hardware-tested mainline configurati
 Type-C DP support is backed by the factory DTB. The mainline DTS restores the DP0, SBU and Alt Mode endpoints from that topology, but PD negotiation, lane orientation and display output still require mainline hardware validation.
 
 The device tree only describes kernel-side wiring. A working loader, U-Boot and eMMC layout are still required for the board to boot.
+
+The M.2 B-key socket is not soldered. Only the software wiring is complete. After soldering, test SATA1, boot scanning and power with a B+M key SATA SSD.

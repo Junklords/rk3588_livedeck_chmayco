@@ -39,7 +39,7 @@ display、storage、PCIe/SATA 和 pinctrl 依赖均由板级文件显式描述�
 | 视频输入 | LT6911UXC 转 MIPI CSI-2 |
 | 内置摄像头 | IMX766 + DW9800W 自动对焦 + OTP EEPROM |
 | 网络 | GMAC1、RGMII、PHY 地址 1 |
-| 扩展 | PCIe 2.0 x1 lane 0、SATA0 |
+| 扩展 | M.2 B-key 焊盘预埋为 SATA1；另有独立 SATA0 |
 | USB | USB3 OTG0、USB3 Host1、两路 USB2 Host、Type-C PD |
 | 音频 | ES8388、HDMI1 音频、DP0 音频 |
 | RTC | SD3078/HYM8563 兼容设备，I2C 地址 `0x32` |
@@ -84,7 +84,7 @@ display、storage、PCIe/SATA 和 pinctrl 依赖均由板级文件显式描述�
                           └──────────────┘
 
    ┌──────────────┐       ┌──────────────┐
-   │ PCIe 2.0 x1  │──────►│ combphy1     │
+   │ M.2 B-key    │──────►│ combphy1     │
    └──────────────┘       └──────────────┘
    ┌──────────────┐       ┌──────────────┐
    │ SATA0        │──────►│ combphy0     │
@@ -230,7 +230,7 @@ ES8388 控制引脚：
 | --- | --- | --- | --- | --- |
 | 存储 | eMMC | `mmc@fe2e0000` | 8-bit HS400 | 启用 |
 | 存储 | SATA0 | `sata@fe210000` | SATA + combphy0 | 启用 |
-| 扩展 | PCIe 2.0 x1 lane0 | `pcie@fe170000` | domain 2 + combphy1 | 启用 |
+| 扩展 | M.2 B-key SATA1 | `sata@fe220000` | SATA + combphy1 | 预埋；需先焊接 B-key 座 |
 | 网络 | RJ45 | `ethernet@fe1c0000` | RGMII，PHY@1，`tx_delay=0x43` | 启用 |
 | 显示 | eDP0 | `edp@fdec0000` | 1920×1080 | 启用 |
 | 显示 | HDMI1 | `hdmi@fdea0000` | HDMI TX | 启用 |
@@ -245,10 +245,11 @@ ES8388 控制引脚：
 
 ## DTS 状态策略
 
-工厂 FDT 中相关输出状态如下：
+工厂 FDT 中的相关状态如下：
 
 - 启用：eDP0、HDMI1、DP0、GMAC1、PCIe 2.0 x1 lane0、SATA0、eMMC、USB OTG/Host、IMX766、LT6911、ES8388。
 - 关闭：HDMI0、DP1、DSI0、DSI1、eDP1、SD、SDIO、PCIe 3.0、USB Host3。
+- 当前重建版本关闭 PCIe lane0，启用共享 `combphy1_ps` 的 SATA1，供可选 M.2 B-key 焊盘使用。
 - 原厂 PWM3 被关闭但风扇引用 PWM3，因此重建版本主动启用 PWM3。
 - 心跳灯与 GMAC1 reset 共用 GPIO3_B7，因此重建版本关闭心跳灯。
 
@@ -267,7 +268,7 @@ ES8388 控制引脚：
 `dts-7.3-linux` 按主线 binding 重写，不复用 vendor DTSI 属性。当前包含：
 
 - RK806、RK8602/RK8603 与八核 CPU 供电；
-- eMMC、UART2/M0、GMAC1、PCIe 2.0 x1 lane0、SATA0；
+- eMMC、UART2/M0、GMAC1、M.2 SATA1、SATA0；
 - USB3 OTG0/Host1、USB2 Host0/1、HUSB311 Type-C；
 - VOP2、eDP0 面板、HDMI1、DP0 Type-C Alt Mode；
 - 三核 NPU、RGA3/RGA2、VPU121、四核 VEPU121 JPEG、RKVDEC0/1 和 AV1；
@@ -288,3 +289,4 @@ Linux 7.3 主线尚未提供本机所需的 vendor RKCIF/RKISP 驱动，因此 I
 3. Type-C DP 能力有原厂 DTB 证据，当前主线 DTS 已按原厂拓扑恢复 DP0/SBU/Alt Mode 端点，但仍需在主线内核下实测 PD 协商、lane 方向和显示输出。
 4. Android DTB 保留本机原厂序列号和 `_a` slot；批量部署时必须由引导层替换设备专属参数。
 5. 设备树只描述内核侧硬件。正式启动仍依赖匹配的 loader、U-Boot 和 eMMC 分区布局。
+6. M.2 B-key 座尚未焊接。当前只完成软件预埋；焊接后需用 B+M key SATA SSD 验证 SATA1、启动扫描和供电。

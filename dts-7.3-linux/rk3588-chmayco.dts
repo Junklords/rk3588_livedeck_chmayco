@@ -591,7 +591,10 @@
 };
 
 &pcie2x1l0 {
-	vpcie3v3-supply = <&vcc3v3_pcie20>;
+	status = "disabled";
+};
+
+&sata1 {
 	status = "okay";
 };
 

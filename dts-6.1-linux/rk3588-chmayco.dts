@@ -1071,9 +1071,11 @@
 };
 
 &pcie2x1l0 {
+		status = "disabled";
+};
+
+&sata1 {
 		status = "okay";
-		/* The reference-board reset GPIO is not wired on this board. */
-		/delete-property/ reset-gpios;
 };
 
 &pinctrl {
